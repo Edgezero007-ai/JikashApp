@@ -1,0 +1,58 @@
+package com.gcash.service;
+
+import com.gcash.dao.TransactionDAO;
+import com.gcash.dao.UserDAO;
+import com.gcash.model.Transaction;
+import com.gcash.model.User;
+import java.sql.SQLException;
+
+public class UserService {
+    private final UserDAO userDAO = new UserDAO();
+    private final TransactionDAO transactionDAO = new TransactionDAO();
+
+    public User login(String username, String password) throws SQLException {
+        User user = userDAO.getUserByUsername(username);
+        if (user != null && user.getPassword().equals(password)) {
+            return user;
+        }
+        return null;
+    }
+
+    public void cashIn(User user, double amount) throws SQLException {
+        double newBalance = user.getBalance() + amount;
+        user.setBalance(newBalance);
+        userDAO.updateBalance(user.getUserId(), newBalance);
+
+        Transaction t = new Transaction();
+        t.setUserId(user.getUserId());
+        t.setType("CASH_IN");
+        t.setAmount(amount);
+        transactionDAO.addTransaction(t);
+    }
+
+    public void transfer(User fromUser, User toUser, double amount) throws SQLException {
+        // Deduct from sender
+        double newFromBalance = fromUser.getBalance() - amount;
+        fromUser.setBalance(newFromBalance);
+        userDAO.updateBalance(fromUser.getUserId(), newFromBalance);
+
+        // Add to receiver
+        double newToBalance = toUser.getBalance() + amount;
+        userDAO.updateBalance(toUser.getUserId(), newToBalance);
+
+        // Record transactions
+        Transaction sendT = new Transaction();
+        sendT.setUserId(fromUser.getUserId());
+        sendT.setType("TRANSFER_OUT");
+        sendT.setAmount(amount);
+        sendT.setRelatedUserId(toUser.getUserId());
+        transactionDAO.addTransaction(sendT);
+
+        Transaction receiveT = new Transaction();
+        receiveT.setUserId(toUser.getUserId());
+        receiveT.setType("TRANSFER_IN");
+        receiveT.setAmount(amount);
+        receiveT.setRelatedUserId(fromUser.getUserId());
+        transactionDAO.addTransaction(receiveT);
+    }
+}

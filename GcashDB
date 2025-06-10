@@ -1,10 +1,20 @@
-CREATE DATABASE IF NOT EXISTS GcashDB;
-USE GcashDB;
+CREATE DATABASE gcash_db;
+USE gcash_db;
 
 CREATE TABLE users (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(100) NOT NULL,
-    Email VARCHAR(100) NOT NULL UNIQUE,
-    Number VARCHAR(15) NOT NULL UNIQUE,
-    PIN VARCHAR(255) NOT NULL  -- Store hashed PINs
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(50) NOT NULL,
+    balance DECIMAL(15,2) DEFAULT 0.00
+);
+
+CREATE TABLE transactions (
+    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    type ENUM('CASH_IN', 'TRANSFER_OUT', 'TRANSFER_IN') NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    related_user_id INT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (related_user_id) REFERENCES users(user_id)
 );
